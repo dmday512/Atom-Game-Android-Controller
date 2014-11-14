@@ -10,9 +10,9 @@ import java.net.InetAddress;
 import java.net.SocketException;
 import java.net.UnknownHostException;
 import java.io.IOException;
-import android.net.wifi.WifiManager;
-import android.net.wifi.WifiInfo;
 import android.util.Log;
+import android.net.wifi.WifiInfo;
+import android.net.wifi.WifiManager;
 
 public class ServerProxy extends Service {
     //members associated with establishing a connection with the server
@@ -24,17 +24,19 @@ public class ServerProxy extends Service {
 
     private final IBinder binder = new ServerBinder();
 
-    public ServerProxy(){
-        this.InIP = getLocalIpAddress();
-        this.InPort = "5000";
+    public ServerProxy() {
+        this.InIP = "";
+        this.InPort = "";
         this.seqNum = 1;
         this.OutIP = "";
         this.OutPort = "";
     }
 
-    public void setProxyCredentials(String IP, String Port){
+    public void setProxyCredentials(String IP, String Port) {
         this.OutIP = IP;
         this.OutPort = Port;
+        this.InIP = getLocalIpAddress();
+        this.InPort = "5000";
     }
 
     /**
@@ -44,9 +46,9 @@ public class ServerProxy extends Service {
      * @return true if message was successfully send, false otherwise. Note this does not
      * guarantee the message was received by the server.
      */
-    public boolean sendMessage(String message){
-        try{
-            Object [] oscargs = new Object [4];
+    public boolean sendMessage(String message) {
+        try {
+            Object[] oscargs = new Object[4];
 
             //Bundle up the incoming IP address, incoming port number, sequence number, and command
             oscargs[0] = InIP;
@@ -62,12 +64,12 @@ public class ServerProxy extends Service {
                 InetAddress otherIP = InetAddress.getByName(OutIP);
                 try {
                     sender = new OSCPortOut(otherIP, Integer.parseInt(OutPort));
-                }catch(SocketException e){
+                } catch (SocketException e) {
                     e.printStackTrace();
                     Log.e("ServerProxy", "Failed to create new OSCPortOut");
                     return false;
                 }
-            }else{
+            } else {
                 //out ip and port were not yet set!
                 Log.e("ServerProxy", "Null OutIP/Port");
                 return false;
@@ -75,13 +77,13 @@ public class ServerProxy extends Service {
             //Send the bundled information to HexAtom
             try {
                 sender.send(new OSCMessage("/interpret", oscargs));
-            }catch(final IOException e){
+            } catch (final IOException e) {
                 e.printStackTrace();
                 Log.e("ServerProxy", "Interpret failed for OSCMessage");
                 return false;
             }
 
-        }catch (final UnknownHostException ux) {
+        } catch (final UnknownHostException ux) {
             ux.printStackTrace();
             Log.e("ServerProxy", "UnknownHostException was thrown.");
             return false;
@@ -90,8 +92,8 @@ public class ServerProxy extends Service {
         return true;
     }
 
-    public class ServerBinder extends Binder{
-        ServerProxy getService(){
+    public class ServerBinder extends Binder {
+        ServerProxy getService() {
             //return an instance of server proxy so clients can
             //call the public methods
             return ServerProxy.this;
@@ -104,12 +106,10 @@ public class ServerProxy extends Service {
     }
 
 
-    /** This function gets the IP address of the Android device running this app, using
-    /* WIFI services, and then returns the IP address it found. This function code used courtesy
-    /* of Krishnaraj Varma (http://www.devlper.com/2010/07/getting-ip-address-of-the-device-in-android/)
-    /* and Kevin McDonagh (http://www.androidsnippets.com/obtain-ip-address-of-current-device). */
-    public String getLocalIpAddress()
-    {
+    /**
+     * @return
+     */
+    public String getLocalIpAddress() {
         try {
             WifiManager wifiManager = (WifiManager) getSystemService(WIFI_SERVICE);
             WifiInfo wifiInfo = wifiManager.getConnectionInfo();
@@ -117,15 +117,24 @@ public class ServerProxy extends Service {
             String ip = intToIp(ipAddress);
             return ip;
         } catch (Exception ex) {
-            /* problem getting IP address */
+            ex.printStackTrace();
+            Log.e("ServerProxy","Error getting local IP.");
         }
         return null;
     }
-    public String intToIp(int i) {
-        return (( i & 0xFF) + "." +
-                ((i >> 8 ) & 0xFF) + "." +
-                ((i >> 16 ) & 0xFF) + "." +
-                ((i >> 24 ) & 0xFF ));
-    }
 
+    /**
+     *
+     * @param i
+     * @return
+     */
+    public String intToIp(int i) {
+
+        return ((i & 0xFF) + "." +
+                ((i >> 8) & 0xFF) + "." +
+                ((i >> 16) & 0xFF) + "." +
+                ((i >> 24) & 0xFF));
+
+
+    }
 }
